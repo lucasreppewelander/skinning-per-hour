@@ -1,0 +1,7 @@
+## Interface: 90002
+## Title: SkinningPerHour
+## Notes: A place to experiment.
+## Author: Welander @ Twisting Nether
+## Version: 1.0
+
+SkinningPerHour.lua
