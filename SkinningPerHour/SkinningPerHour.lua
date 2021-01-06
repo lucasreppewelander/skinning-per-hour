@@ -1,7 +1,7 @@
 SkinningPerHour = { }
 
 -- skinning items
-_items = {172097, 172092, 172089, 172094, 172096}
+_items = {"172097", "172092", "172089", "172094", "172096"}
 BAGS = {0, 1, 2, 3, 4}
 items = {}
 quantity = {}
@@ -16,16 +16,6 @@ local function has_value (tab, val)
     return false
 end
 
-local function has_not_value (tab, val)
-    for index, value in ipairs(tab) do
-        if value == val then
-            return false
-        end
-    end
-
-    return true
-end
-
 function SkinningPerHour:CheckItemsInBags(f)
     for i=0, 4 do
         bagSlots = GetContainerNumSlots(i)
@@ -35,17 +25,17 @@ function SkinningPerHour:CheckItemsInBags(f)
         while ( slotsCheckLeft > 0 ) do
             itemID = GetContainerItemID(i, slotIndex)
 
-            if has_value(_items, itemID) then
+            if has_value(_items, tostring(itemID)) then
                 texture, itemCount = GetContainerItemInfo(i, slotIndex)
 
-                if quantity[itemID] then
-                    quantity[itemID] = quantity[itemID] + itemCount
+                if quantity[tostring(itemID)] then
+                    quantity[tostring(itemID)] = quantity[tostring(itemID)] + itemCount
                 else
-                    quantity[itemID] = itemCount;
+                    quantity[tostring(itemID)] = itemCount;
                 end
 
-                if has_not_value(items, itemID) then
-                    table.insert(items, itemID)
+                if not has_value(items, tostring(itemID)) then
+                    table.insert(items, tostring(itemID))
                 end
             end
 
@@ -81,24 +71,15 @@ function SkinningPerHour:PresentBagItems(i, itemID, quantity)
     local range = i * 20
     local negative = -range
     
-    f.fontStrings[itemID] = f:CreateFontString(nil, "OVERLAY", "GameTooltipText")
-    f.fontStrings[itemID]:SetPoint("TOPLEFT", 20, negative)
-    f.fontStrings[itemID]:SetTextColor(SkinningPerHour:GetColorByName(quality))
+    f.fontStrings[tostring(itemID)] = f:CreateFontString(nil, "OVERLAY", "GameTooltipText")
+    f.fontStrings[tostring(itemID)]:SetPoint("TOPLEFT", 20, negative)
+    f.fontStrings[tostring(itemID)]:SetTextColor(SkinningPerHour:GetColorByName(quality))
 
     -- 163 53 238
-
-    f.fontStrings[itemID]:SetText(itemName .. " (" .. quantity .. ")")
+    f.aquiredSinceStart[tostring(itemID)] = 0
+    print(itemName, quality, tostring(itemID))
+    f.fontStrings[tostring(itemID)]:SetText(itemName .. " (" .. quantity .. ") (session: "..f.aquiredSinceStart[itemID]..")")
 end
-
---[[
-function SkinningPerHour:RegisterEvent(self, event)
-    if event == "PLAYER_ENTERING_WORLD" then
-
-    else if event == "ITEM_PUSH" then
-        
-    end
-end
-]]
 
 function event__LOOT_READY(f)
     local numItems = GetNumLootItems()
@@ -106,20 +87,25 @@ function event__LOOT_READY(f)
         local _, nme, qty = GetLootSlotInfo(slotID)
         if (qty or 0) > 0 then
             local _, link = GetItemInfo(nme)
-            local lootItemId = tonumber(string.match(link, "%d+"))
+            print("---------------")
+            local _, lootItemId = strsplit(":", link)
+            -- local lootItemId = tonumber(string.match(link, "%d+"))
 
-            if has_value(_items, lootItemId) then
-                if quantity[lootItemId] then
-                    quantity[lootItemId] = quantity[lootItemId] + qty
+            print("lootItemId: "..lootItemId)
+            if has_value(_items, tostring(lootItemId)) then
+                if quantity[tostring(lootItemId)] then
+                    quantity[tostring(lootItemId)] = quantity[tostring(lootItemId)] + qty
                 else
-                    quantity[lootItemId] = qty;
+                    quantity[tostring(lootItemId)] = qty;
                 end
 
-                if has_not_value(items, lootItemId) then
-                    table.insert(items, lootItemId)
+                if not has_value(items, tostring(lootItemId)) then
+                    table.insert(items, tostring(lootItemId))
                 end
 
-                f.fontStrings[lootItemId]:SetText(nme .. " (" .. quantity[lootItemId] .. ")")
+                print(nme, qty, tostring(lootItemId))
+                f.aquiredSinceStart[tostring(lootItemId)] = f.aquiredSinceStart[tostring(lootItemId)] + qty
+                f.fontStrings[tostring(lootItemId)]:SetText(nme .. " (" .. quantity[tostring(lootItemId)] .. ") (session: "..f.aquiredSinceStart[tostring(lootItemId)]..")")
                 f:SetHeight(10 + #items * 25)
             end
         end
@@ -140,7 +126,9 @@ function SkinningPerHour:Run()
 
     f:SetPoint("TOPLEFT",10,-10)
     f.fontStrings = {}
+    f.aquiredSinceStart = {}
 
+    --[[
     items, quantity = SkinningPerHour:CheckItemsInBags(f)
 
     f:SetHeight(10 + #items * 25) -- for your Texture
@@ -148,11 +136,25 @@ function SkinningPerHour:Run()
     for index, value in pairs(items) do
         SkinningPerHour:PresentBagItems(index, value, quantity[value])
     end
+    ]]--
 
+    f:RegisterEvent("PLAYER_ENTERING_WORLD")
     f:RegisterEvent("LOOT_OPENED")
     f:SetScript("OnEvent", function(self, event, ...)
         if event == "LOOT_OPENED" then
             event__LOOT_READY(f)
+        end
+
+        if event == "PLAYER_ENTERING_WORLD" then
+            SkinningPerHour.startTime = time()
+
+            items, quantity = SkinningPerHour:CheckItemsInBags(f)
+
+            f:SetHeight(10 + #items * 25) -- for your Texture
+
+            for index, value in pairs(items) do
+                SkinningPerHour:PresentBagItems(index, value, quantity[value])
+            end
         end
     end);
 
