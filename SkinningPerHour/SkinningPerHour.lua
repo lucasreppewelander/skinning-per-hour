@@ -120,6 +120,7 @@ function event__LOOT_READY(f)
                 end
 
                 f.fontStrings[lootItemId]:SetText(nme .. " (" .. quantity[lootItemId] .. ")")
+                f:SetHeight(10 + #items * 25)
             end
         end
     end
@@ -129,9 +130,8 @@ function SkinningPerHour:Run()
     local background = "Interface\\TutorialFrame\\TutorialFrameBackground"
 
     f = CreateFrame("Frame",nil,UIParent)
-    f:SetFrameStrata("BACKGROUND")
-    f:SetWidth(400) -- Set these to whatever height/width is needed 
-    f:SetHeight(#_items * 23) -- for your Texture
+    f:SetFrameStrata("HIGH")
+    f:SetWidth(300) -- Set these to whatever height/width is needed 
 
     local t = f:CreateTexture(nil,"BACKGROUND")
     t:SetTexture(background)
@@ -142,6 +142,8 @@ function SkinningPerHour:Run()
     f.fontStrings = {}
 
     items, quantity = SkinningPerHour:CheckItemsInBags(f)
+
+    f:SetHeight(10 + #items * 25) -- for your Texture
 
     for index, value in pairs(items) do
         SkinningPerHour:PresentBagItems(index, value, quantity[value])
