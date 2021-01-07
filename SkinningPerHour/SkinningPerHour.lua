@@ -97,7 +97,9 @@ function SkinningPerHour:PresentBagItems(i, itemID, quantity)
      ahValue = SkinningPerHourGold[itemID]
     end
 
-    f.fontStrings[tostring(itemID)]:SetText(itemName .. " (" .. quantity .. ") (session: ".. sessionQuantity..")\nTotal value in the bags: " .. GetCoinTextureString(quantity * ahValue))
+    if itemName then
+        f.fontStrings[tostring(itemID)]:SetText(itemName .. " (" .. quantity .. ") (session: ".. sessionQuantity..")\nTotal value in the bags: " .. GetCoinTextureString(quantity * ahValue))
+    end
 end
 
 function event__LOOT_READY(f)
@@ -106,31 +108,33 @@ function event__LOOT_READY(f)
         local _, nme, qty = GetLootSlotInfo(slotID)
         if (qty or 0) > 0 then
             local _, link = GetItemInfo(nme)
-            local _, lootItemId = strsplit(":", link)
+            if link then
+                local _, lootItemId = strsplit(":", link)
 
-            if has_value(_items, tostring(lootItemId)) then
-                if quantity[tostring(lootItemId)] then
-                    quantity[tostring(lootItemId)] = quantity[tostring(lootItemId)] + qty
-                else
-                    quantity[tostring(lootItemId)] = qty;
+                if has_value(_items, tostring(lootItemId)) then
+                    if quantity[tostring(lootItemId)] then
+                        quantity[tostring(lootItemId)] = quantity[tostring(lootItemId)] + qty
+                    else
+                        quantity[tostring(lootItemId)] = qty;
+                    end
+
+                    if not has_value(items, tostring(lootItemId)) then
+                        table.insert(items, tostring(lootItemId))
+                    end
+
+                    f.aquiredSinceStart[tostring(lootItemId)] = f.aquiredSinceStart[tostring(lootItemId)] + qty
+                    f.fontStrings[tostring(lootItemId)]:SetText(nme .. " (" .. quantity[tostring(lootItemId)] .. ") (session: "..f.aquiredSinceStart[tostring(lootItemId)]..")\nTotal value in the bags: " .. GetCoinTextureString(quantity[tostring(lootItemId)] * SkinningPerHourGold[tostring(lootItemId)]))
+                    f:SetHeight(#items * 50)
+
+                    local totalBagValue = 0
+                    for index, value in pairs(items) do
+                        local itemValue = SkinningPerHourGold[tostring(value)]
+                        local itemQuantity = quantity[tostring(value)]
+                        totalBagValue = totalBagValue + itemQuantity * itemValue
+                    end
+
+                    f.fontStrings["total"]:SetText("Total bag value: "..GetCoinTextureString(totalBagValue))
                 end
-
-                if not has_value(items, tostring(lootItemId)) then
-                    table.insert(items, tostring(lootItemId))
-                end
-
-                f.aquiredSinceStart[tostring(lootItemId)] = f.aquiredSinceStart[tostring(lootItemId)] + qty
-                f.fontStrings[tostring(lootItemId)]:SetText(nme .. " (" .. quantity[tostring(lootItemId)] .. ") (session: "..f.aquiredSinceStart[tostring(lootItemId)]..")\nTotal value in the bags: " .. GetCoinTextureString(quantity[tostring(lootItemId)] * SkinningPerHourGold[tostring(lootItemId)]))
-                f:SetHeight(#items * 50)
-
-                local totalBagValue = 0
-                for index, value in pairs(items) do
-                    local itemValue = SkinningPerHourGold[tostring(value)]
-                    local itemQuantity = quantity[tostring(value)]
-                    totalBagValue = totalBagValue + itemQuantity * itemValue
-                end
-
-                f.fontStrings["total"]:SetText("Total bag value: "..GetCoinTextureString(totalBagValue))
             end
         end
     end
@@ -141,7 +145,7 @@ function SkinningPerHour:Run()
 
     btn = CreateFrame("Button", nil, UIParent, "UIPanelButtonTemplate")
     f = CreateFrame("Frame",nil,UIParent)
-    f:SetFrameStrata("HIGH")
+    f:SetFrameStrata("MEDIUM")
     f:SetWidth(400) -- Set these to whatever height/width is needed 
 
     local t = f:CreateTexture(nil,"BACKGROUND")
