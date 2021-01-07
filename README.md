@@ -4,4 +4,6 @@
 
 
 
-** beware of errors.. **
+**beware of errors..**
+
+![](https://github.com/lucasreppewelander/skinning-per-hour/blob/master/screenshot.png)
